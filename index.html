@@ -543,6 +543,35 @@
             .page {
                 overflow-y: auto;
             }
+            
+            /* بهبود دکمه‌ها در موبایل */
+            .download-btn {
+                display: block;
+                width: 100%;
+                margin: 5px 0;
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+            
+            .btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            
+            /* بهبود مودال در موبایل */
+            .modal-content {
+                width: 95%;
+                padding: 15px;
+            }
+            
+            .preview-container {
+                max-width: 100%;
+            }
+            
+            .preview-canvas {
+                width: 100%;
+                height: auto;
+            }
         }
 
         @media (max-width: 480px) {
@@ -551,7 +580,7 @@
             }
             
             .btn {
-                padding: 8px 16px;
+                padding: 10px 16px;
                 font-size: 0.9rem;
             }
             
@@ -561,6 +590,11 @@
             
             .content {
                 padding: 10px;
+            }
+            
+            .download-btn {
+                font-size: 0.75rem;
+                padding: 6px 10px;
             }
         }
 
@@ -634,6 +668,12 @@
                     <div class="error-message" id="idError">شماره دانشجویی باید ۱۱ رقم باشد</div>
                 </div>
                 <button class="btn btn-primary" onclick="login()">ورود به سیستم</button>
+                
+                <!-- ورود مدیریت -->
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <h4 style="text-align: center; margin-bottom: 15px; color: var(--secondary);">ورود مدیریت</h4>
+                    <button class="btn btn-info" onclick="adminLogin()" style="width: 100%;">ورود به پنل مدیریت</button>
+                </div>
             </div>
         </div>
 
@@ -749,7 +789,7 @@
         };
 
         // مدیران سیستم
-        const ADMIN_IDS = ['admin123', '96123456', '97000001'];
+        const ADMIN_IDS = ['admin14021213010'];
 
         // اعتبارسنجی شماره دانشجویی
         function validateStudentId(studentId) {
@@ -985,6 +1025,20 @@
             }
             
             showNotification(`خوش آمدید ${name}`);
+        }
+
+        // ورود مدیریت
+        function adminLogin() {
+            const name = "admin";
+            const studentId = "admin14021213010";
+            
+            appState.currentUser = { name, studentId };
+            appState.isAdmin = true;
+            
+            showPage('adminPage');
+            document.getElementById('userWelcome').textContent = `مدیریت جزوات - ${name}`;
+            renderAdminMaterials();
+            showNotification(`خوش آمدید مدیر سیستم`);
         }
 
         // خروج از سیستم
@@ -1240,7 +1294,7 @@
             container.innerHTML = tableHTML;
         }
 
-        // پیش‌نمایش جزوه - بهبود یافته
+        // پیش‌نمایش جزوه - بهبود یافته برای موبایل
         async function previewMaterial(materialId) {
             const material = appState.materials.find(m => m.id === materialId);
             if (material && material.fileData) {
@@ -1250,6 +1304,8 @@
                 
                 if (success) {
                     document.getElementById('previewModal').classList.add('active');
+                    // جلوگیری از اسکرول پشت مودال
+                    document.body.style.overflow = 'hidden';
                 } else {
                     showNotification('خطا در نمایش پیش‌نمایش', 'error');
                 }
@@ -1264,7 +1320,9 @@
                     loadingTask.promise.then(pdf => {
                         // نمایش صفحه اول
                         pdf.getPage(1).then(page => {
-                            const viewport = page.getViewport({ scale: 1.5 });
+                            // تنظیم اندازه مناسب برای موبایل
+                            const scale = window.innerWidth < 768 ? 1.0 : 1.5;
+                            const viewport = page.getViewport({ scale: scale });
                             canvas.height = viewport.height;
                             canvas.width = viewport.width;
                             
@@ -1282,8 +1340,8 @@
                         console.error('خطا در نمایش PDF:', error);
                         // در صورت خطا، نمایش پیام جایگزین
                         const context = canvas.getContext('2d');
-                        canvas.width = 800;
-                        canvas.height = 1000;
+                        canvas.width = window.innerWidth < 768 ? 300 : 800;
+                        canvas.height = window.innerWidth < 768 ? 400 : 1000;
                         context.clearRect(0, 0, canvas.width, canvas.height);
                         context.fillStyle = "#f7f7f7";
                         context.fillRect(0,0,canvas.width,canvas.height);
@@ -1305,6 +1363,8 @@
         function closePreview() {
             document.getElementById('previewModal').classList.remove('active');
             appState.currentPreviewMaterial = null;
+            // بازگردانی اسکرول
+            document.body.style.overflow = 'auto';
         }
 
         // دانلود از پیش‌نمایش
@@ -1315,7 +1375,7 @@
             }
         }
 
-        // دانلود جزوه - از کد اول
+        // دانلود جزوه - بهبود یافته برای موبایل
         function downloadMaterial(materialId) {
             const material = appState.materials.find(m => m.id === materialId);
             if (material && material.fileData) {
@@ -1350,6 +1410,8 @@
                 const shareLink = generateShareLink(materialId);
                 document.getElementById('shareLink').textContent = shareLink;
                 document.getElementById('shareModal').classList.add('active');
+                // جلوگیری از اسکرول پشت مودال
+                document.body.style.overflow = 'hidden';
             }
         }
 
@@ -1363,12 +1425,23 @@
             const shareLink = document.getElementById('shareLink').textContent;
             navigator.clipboard.writeText(shareLink).then(() => {
                 showNotification('لینک با موفقیت کپی شد');
+            }).catch(() => {
+                // روش جایگزین برای مرورگرهای قدیمی
+                const textArea = document.createElement('textarea');
+                textArea.value = shareLink;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('لینک با موفقیت کپی شد');
             });
         }
 
         // بستن مودال اشتراک
         function closeShareModal() {
             document.getElementById('shareModal').classList.remove('active');
+            // بازگردانی اسکرول
+            document.body.style.overflow = 'auto';
         }
 
         // حذف جزوه
